@@ -33,7 +33,7 @@ PRODUCTS = [
     {"id": "AO-012", "name": "Crash Pad Compact", "category": "climbing", "price": 249.0,
      "stock": 6, "description": "Bouldering crash pad with taco hinge."},
     {"id": "AO-013", "name": "Tent Stake Set", "category": "camping", "price": 9.0,
-     "stock": 75, "description": "Anuminum Y-stakes, set of eight."},
+     "stock": 75, "description": "Aluminum Y-stakes, set of eight."},
     {"id": "AO-014", "name": "Firestarter Kit", "category": "camping", "price": 12.5,
      "stock": 58, "description": "Ferro rod, tinder, and waterproof matches."},
 ]

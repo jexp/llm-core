@@ -44,6 +44,10 @@ def _resolve_refs(node: Any, schemas: dict) -> Any:
 class ContractRegistry:
     def __init__(self, openapi_path: Path) -> None:
         self._doc: dict = yaml.safe_load(Path(openapi_path).read_text())
+        self._exemplars: dict[str, list[dict]] = self._load_exemplars(Path(openapi_path).parent.parent / "exemplars")
+        issues = self._validate_document()
+        if issues:
+            raise ValueError("invalid contract document:\n  - " + "\n  - ".join(issues))
         self._ops: dict[str, ContractOp] = {}
         schemas = self._doc.get("components", {}).get("schemas", {})
         for path, item in self._doc.get("paths", {}).items():
@@ -106,6 +110,89 @@ class ContractRegistry:
              "request_schema": o.request_schema or {"type": "object"}}
             for o in sorted(self._ops.values(), key=lambda o: o.op_id)
         ]
+
+    # ---- document validation ------------------------------------------------------
+
+    def _validate_document(self) -> list[str]:
+        """Validate the spec itself — critical because the document is LLM-generated at
+        bootstrap. Checks: OpenAPI 3.x document validity, every schema is valid 2020-12,
+        and house rules for LLM-structured-output compatibility (object schemas must close
+        themselves with additionalProperties; ops must carry x-scenario)."""
+        issues: list[str] = []
+        try:
+            from openapi_spec_validator import validate as validate_openapi
+
+            validate_openapi(self._doc)
+        except ImportError:
+            issues.append("openapi-spec-validator not installed — document validity unchecked")
+        except Exception as e:  # noqa: BLE001 — validator raises many shapes
+            issues.append(f"not a valid OpenAPI document: {e}")
+
+        for name, schema in self._doc.get("components", {}).get("schemas", {}).items():
+            issues += self._schema_issues(schema, f"components.schemas.{name}")
+        for path, item in self._doc.get("paths", {}).items():
+            for method, op in item.items():
+                if method not in {"get", "post", "put", "patch", "delete"} or not isinstance(op, dict):
+                    continue
+                if "operationId" in op and not str(op.get("x-scenario", "")).strip():
+                    issues.append(f"{method} {path}: operationId without x-scenario")
+                where = f"{method} {path}"
+                for kind in ("requestBody", "responses"):
+                    node = op.get(kind)
+                    if isinstance(node, dict):
+                        for code, resp in node.items():
+                            schema = (
+                                resp.get("content", {}).get("application/json", {}).get("schema")
+                                if kind == "responses"
+                                else node.get("content", {}).get("application/json", {}).get("schema")
+                            )
+                            if schema:
+                                issues += self._schema_issues(schema, f"{where} {kind}[{code}]")
+        return issues
+
+    def _schema_issues(self, schema: dict, where: str) -> list[str]:
+        issues: list[str] = []
+        try:
+            Draft202012Validator.check_schema(schema)
+        except Exception as e:  # noqa: BLE001
+            return [f"{where}: invalid JSON Schema — {e}"]
+
+        def walk(node: Any, loc: str) -> None:
+            if isinstance(node, dict):
+                if set(node) == {"$ref"}:
+                    return
+                if node.get("type") == "object" and "additionalProperties" not in node:
+                    issues.append(f"{loc}: object schema must set additionalProperties (closed-world)")
+                for key, value in node.items():
+                    if key in {"properties", "items", "anyOf", "oneOf", "allOf", "prefixItems"}:
+                        if isinstance(value, dict):
+                            for sub_key, sub in value.items():
+                                walk(sub, f"{loc}.{key}.{sub_key}")
+                        elif isinstance(value, list):
+                            for i, sub in enumerate(value):
+                                walk(sub, f"{loc}.{key}[{i}]")
+
+        walk(schema, where)
+        return issues
+
+    def _load_exemplars(self, exemplars_dir: Path) -> dict[str, list[dict]]:
+        """Golden request→response pairs per op (contracts/exemplars/<op>.yaml). These are the
+        client-visible contract behavior, regression tests for implementations, and the shadow
+        corpus for T2 promotion."""
+        loaded: dict[str, list[dict]] = {}
+        if not exemplars_dir.is_dir():
+            return loaded
+        for path in sorted(exemplars_dir.glob("*.yaml")):
+            raw = yaml.safe_load(path.read_text()) or {}
+            for ex in raw.get("exemplars", []):
+                loaded.setdefault(raw.get("op", path.stem), []).append(ex)
+        return loaded
+
+    def exemplars(self, op_id: str) -> list[dict]:
+        return self._exemplars.get(op_id, [])
+
+    def exemplared_ops(self) -> list[str]:
+        return sorted(self._exemplars)
 
     def openapi_dict(self) -> dict:
         return self._doc

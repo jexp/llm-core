@@ -1,0 +1,24 @@
+# Golden contract behavior for catalog.list: request→response pairs.
+# Doubles as implementation regression tests and the T2 shadow corpus.
+op: catalog.list
+exemplars:
+  - name: price-ceiling
+    args: {max_price: 20}
+    output:
+      items:
+        - {id: AO-007, name: "Scree Hiking Poles", category: hiking, price: 17.5, stock: 60,
+           description: "Aluminum three-section poles with cork grips."}
+        - {id: AO-013, name: "Tent Stake Set", category: camping, price: 9.0, stock: 75,
+           description: "Aluminum Y-stakes, set of eight."}
+        - {id: AO-014, name: "Firestarter Kit", category: camping, price: 12.5, stock: 58,
+           description: "Ferro rod, tinder, and waterproof matches."}
+      count: 3
+  - name: category-filter
+    args: {category: climbing, limit: 2}
+    output:
+      items:
+        - {id: AO-004, name: "Summit Belay Kit", category: climbing, price: 149.0, stock: 8,
+           description: "Belay device, carabiners, and sling package."}
+        - {id: AO-008, name: "Chalk Bag Pro", category: climbing, price: 22.0, stock: 37,
+           description: "Fleece-lined chalk bag with brush holder."}
+      count: 2

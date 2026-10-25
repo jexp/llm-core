@@ -30,6 +30,10 @@ a JIT ladder for APIs. Grounded in four papers (see `docs/RESEARCH-NOTES.md`).
    schema-validated at a single enforcement point; prompt injection degrades to a TypeError.
 4. **Interpreter emits a plan DSL, not free-form actions** (AIOS): plan operations are bound to
    contract registry operations — auditable, replayable, and the compilation target for the JIT tier.
+   The plan's *output schema is generated from the promoted spec itself*: each contract op becomes
+   a typed variant (discriminated by `op`, args typed by that op's request schema), so the model
+   is constrained at generation time to ops and args inside the contract. Broker re-validation
+   after execution remains the enforcement point — generation-time constraint is defense-in-depth.
 5. **JIT-compiled handlers are "self-made tools"** (AIOS): promoted handlers register behind the
    same Tool-API as everything else; interpreter traces seed them.
 6. **Adaptive model routing & swappable models** (Next Frontier): every model slot (router,
@@ -45,38 +49,102 @@ a JIT ladder for APIs. Grounded in four papers (see `docs/RESEARCH-NOTES.md`).
 
 ## System overview
 
-```
- Persona clients ──► GATEWAY (authn, trust score, request envelope, append-only audit log)
- (chat UI / CLI /        │
-  MCP / OpenAPI)         ▼
-                   ┌─ KERNEL (control plane) ─────────────────────────────────┐
-                   │ DECISION ROUTER  (rules → Jev decider → LLM fallback; trusted  │
-                   │   inputs only: request + policy + capability registry)    │
-                   │   ├─ T0  deterministic handler registry (seeded + JIT-   │
-                   │   │      promoted), versioned, behind contracts          │
-                   │   ├─ T1  INTERPRETER: Pydantic AI agent emits plan-DSL   │
-                   │   │      ops bound to contract operations; tool broker   │
-                   │   │      executes; schema-validate every output          │
-                   │   ├─ T2  COMPILER: profiler counts request signatures;   │
-                   │   │      threshold → codegen handler + tests + judge →   │
-                   │   │      shadow-compare vs recorded traffic → promote    │
-                   │   └─ escalate / deterministic fallback on low confidence │
-                   └───────────────┬─────────────────────────────────────────┘
-                                   ▼
-                   CONTRACT REGISTRY (OpenAPI 3.1 + JSON Schema + MCP manifest,
-                     semver + changelog; "promoted" specs are what clients get)
-                                   ▼
-        GOVERNANCE PLANE: policy engine · INVARIANT CHECKER (order⇒account,
-        payment⇒completion, stock⇒reservation) · agentic AUDITOR (replays audit
-        log vs client requests) · JUDGE scoring · trust-score computation
-                                   ▼
-        MODULE SERVICES (own DB each, strict contract, replaceable impl):
-        identity · catalog/inventory · orders/checkout · payments (stripe-mock)
-        campaigns/policy/discounts · warehouse · [M2: sellers/marketplace]
-        analytics (DuckDB over event log) · graph/recs (Neo4j) · chat agent
+```mermaid
+flowchart TB
+    subgraph clients ["clients (trust-scored principals)"]
+        UI["chat UI"]
+        CLI["CLI"]
+        MCP["MCP agents"]
+        API["OpenAPI consumers"]
+        PER["persona harness"]
+    end
+
+    GW["GATEWAY<br/>authn · trust score · request envelope"]
+    AUD[("append-only hash-chained<br/>audit log (Postgres)")]
+
+    subgraph kernel ["KERNEL (control plane)"]
+        RT{"Decision Router<br/>rules → Jev battery → LLM fallback<br/>trusted inputs only"}
+        T0["T0 deterministic handlers<br/>(seeded + JIT-promoted, versioned)"]
+        T1["T1 interpreter<br/>plan-DSL ops bound to contracts<br/>(spec-derived structured output)"]
+        T2["T2 JIT compiler<br/>profile → codegen → validate → shadow → promote"]
+        ESC["escalate / safe refusal"]
+    end
+
+    subgraph governance ["GOVERNANCE PLANE"]
+        POL["policy engine"]
+        INV["invariant checker<br/>(order⇒account, payment⇒completion, stock⇒reservation)"]
+        AUDT["agentic auditor<br/>(replays audit vs client logs)"]
+        JUDGE["judge pool"]
+        TRUST["trust-score computation"]
+    end
+
+    CR[("CONTRACT REGISTRY<br/>OpenAPI 3.1 + JSON Schema + MCP manifest<br/>semver · exemplars · spec validated at load")]
+
+    subgraph modules ["MODULE SERVICES (own DB, replaceable impl)"]
+        ID["identity"]
+        CAT["catalog/inventory"]
+        ORD["orders/checkout"]
+        PAY["payments (stripe-mock)"]
+        CAMP["campaigns/policy"]
+        WH["warehouse"]
+        CHAT["chat agent"]
+    end
+
+    PG[("Postgres (OLTP)")]
+    DUCK[("DuckDB (analytics over event log)")]
+    NEO[("Neo4j (graph/recs)")]
+
+    clients --> GW
+    GW --> AUD
+    GW --> RT
+    RT -->|"exact op"| T0
+    RT -->|"natural language"| T1
+    RT -->|"low confidence / high risk"| ESC
+    T2 -.->|"promotes validated handlers"| T0
+    T1 -->|"profiler feeds"| T2
+    T0 & T1 --> CR
+    CR --> governance
+    T0 & T1 -->|"schema-checked in/out"| modules
+    modules --> PG & DUCK & NEO
+    AUD --> AUDT & TRUST
 ```
 
 ## Request lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Cl as Client (persona / chat / CLI / MCP)
+    participant GW as Gateway
+    participant RT as Router (rules → Jev → LLM)
+    participant T1 as Interpreter (T1)
+    participant BR as Tool Broker
+    participant M as Module (catalog, orders, …)
+    participant A as Audit chain
+
+    Cl->>GW: POST /v1/request (envelope + bearer key)
+    GW->>A: RECEIVED
+    GW->>RT: route(envelope)
+    RT->>A: DECISION (battery: tier/intent/risk answers + confidence)
+    RT->>A: DECIDED (tier)
+    alt T0 — exact contract op
+        RT->>BR: execute(op, args)
+        BR->>M: handler(args) — schema-checked
+        BR->>A: OP_RESULT (output validated)
+    else T1 — natural language
+        RT->>T1: handle()
+        T1->>A: PLAN (ops bound to contract registry)
+        loop each plan op
+            T1->>BR: execute(op, args)
+            BR->>M: handler(args) — schema-checked
+            BR->>A: OP_RESULT
+        end
+    else escalate
+        RT->>A: ESCALATED (safe refusal)
+    end
+    GW->>A: COMPLETED
+    GW-->>Cl: typed response (request_id + tier + result)
+```
 
 1. Client (persona harness, chat UI, CLI, MCP tool call, or plain OpenAPI HTTP) sends a request
    envelope: `{principal, capability_hint, payload, idempotency_key}`.
@@ -128,10 +196,19 @@ a JIT ladder for APIs. Grounded in four papers (see `docs/RESEARCH-NOTES.md`).
 
 ## JIT ladder (the core experiment)
 
-```
-interpret (T1) ──► profile ──► codegen ──► static gate ──► judge ──► shadow ──► promote
-     ▲                                                                        │
-     └────────────────────── demote on drift/error-rate ◄────────────────────┘
+```mermaid
+flowchart LR
+    T1["T1 interpreter serves the op"] --> PROF[/"profiler<br/>request signatures<br/>N ≥ 25 · success ≥ 0.9"/]
+    PROF -->|"candidate"| CG["codegen agent<br/>handler + unit/property tests"]
+    CG --> SG{"static gate<br/>banned imports · IFC-lite<br/>data labels · complexity"}
+    SG -->|"reject"| T1
+    SG -->|"pass"| JG{"judge review<br/>vs contract semantics"}
+    JG -->|"concerns"| T1
+    JG -->|"pass"| SH{"shadow<br/>replay exemplars +<br/>mirrored traffic, dry-run"}
+    SH -->|"mismatch"| T1
+    SH -->|"match within tolerance"| PR["promote: atomic swap<br/>semver bump · rollback retained"]
+    PR --> T0["T0 serves the op"]
+    T0 -->|"error-rate drift /<br/>invariant failure"| DM["demote"] --> T1
 ```
 
 1. **Profiler**: buckets requests by *signature* = (contract operation, normalized arg shape).
@@ -176,13 +253,35 @@ definition declares:
 | `thresholds` | risk-scaled confidence/probability floors per answer (Typesafe three-range pattern: auto / confirm / escalate) |
 | `fallback` | deterministic default answer, LLM decider, or escalate — used when the backend is unavailable or an answer is below floor (recorded as `unsure`, never guessed) |
 | `data_labels` | IFC classes of state fields; sending `pii`/`payment` state to an external API is a policy-enforced egress event — those fields are masked, or the decision routes to a local backend |
-| `backend` | `jev` (remote System One) / `jev-local` (any Jev-compatible implementation) / `llm` / `rules` — interchangeable behind the same battery semantics, so decisions participate in the replaceable-model demo |
+| `backend` | `jev` (remote System One) / `jev-local` (any Jev-compatible implementation) / `llm` / `rules` — interchangeable behind the same battery semantics, so decisions participate in the replaceable-model demo. The `llm` backend's output type is generated from the battery definition (choice → enum, noul → 0..1, score → 1..levels), matching Jev's answer semantics. |
 | `cache` | digest-keyed TTL cache for pure decisions (same state + version ⇒ cached answer) |
 
 Every call is audited (decision id + version, state digest, answers, confidences, backend used,
 fallback taken) so the auditor can replay decisions and detect drift. If `TYPESAFE_API_KEY` is
 unset or the call fails, definitions degrade to their declared fallback and the audit entry
 records the degraded path.
+
+```mermaid
+flowchart TB
+    CALL["module calls kernel.decide(name, state)"] --> REG[("decision registry<br/>contracts/decisions/*.yaml<br/>semver · thresholds · fallback · data labels")]
+    REG --> CACHE{"cache hit?<br/>(state digest + version)"}
+    CACHE -->|"yes"| OUT
+    CACHE -->|"no"| MASK{"data_labels mark<br/>pii / payment?"}
+    MASK -->|"yes (remote backend)"| MSK["mask state fields<br/>(IFC-lite egress control)"]
+    MASK -->|"no"| TRY
+    MSK --> TRY{"primary backend<br/>jev (System One)"}
+    TRY -->|"answers" | THR
+    TRY -->|"unavailable"| FB{"declared fallback"}
+    FB -->|"llm"| LLM["LLM battery<br/>spec-derived typed output<br/>(fast model)"]
+    FB -->|"rules"| RULES["declared defaults"]
+    FB -->|"all failed"| ESCOUT["escalate outcome<br/>(answers marked escalate,<br/>never guessed)"]
+    LLM -->|"answers"| THR
+    LLM -->|"unavailable"| RULES
+    RULES --> THR
+    ESCOUT --> OUT
+    THR["thresholds<br/>choice/score: confidence floors<br/>noul: yes ≥ 0.7 / no ≤ 0.3<br/>→ auto / confirm / escalate"] --> OUT["typed answers + probabilities + confidence"]
+    OUT --> AUD[("audit: DECISION entry<br/>(backend, degraded flag, attempts)")]
+```
 
 Consumers (illustrative, not exhaustive):
 
@@ -208,7 +307,11 @@ trigger the declared fallback rather than a guess.
 
 - Source of truth: `contracts/` — OpenAPI 3.1 + JSON Schema per op + an MCP tool manifest
   generated from the same source; semver + changelog per operation (operations version
-  independently of the spec document).
+  independently of the spec document). The registry **validates the document itself at load**
+  (OpenAPI conformance, every schema valid 2020-12, house rules: ops carry `x-scenario`, object
+  schemas are closed with `additionalProperties` — mandatory because the document is
+  LLM-generated at bootstrap). `contracts/exemplars/<op>.yaml` holds golden request→response
+  pairs: executable contract tests, implementation regression tests, and the T2 shadow corpus.
 - **Bootstrap flow**: the system starts from `bootstrap/spec_prompt.md` (textual description of
   the shop) → spec-draft agent emits the initial OpenAPI draft + invariant list + persona
   suggestions → human review gate → promote v0.1.0 → published at `/specs/openapi.json` and as
@@ -256,6 +359,39 @@ escalation (static gate + sandbox), audit-log tampering (hash chain verification
 
 Each module: own DB, strict contract, replaceable implementation (deterministic code today,
 model-backed variant possible behind the same contract — that swap is a demo goal).
+
+```mermaid
+flowchart TB
+    BR["tool broker — single enforcement point<br/>(schema-checked inputs, typed outputs, audited)"]
+    AUD[("audit chain (Postgres)")]
+
+    subgraph mods ["module services"]
+        ID["identity"]
+        CAT["catalog / inventory"]
+        ORD["orders / checkout"]
+        PAY["payments"]
+        CAMP["campaigns / policy"]
+        WH["warehouse"]
+        CHAT["chat agent<br/>(tools = contract ops)"]
+    end
+
+    PG[("Postgres (OLTP)")]
+    SM["stripe-mock<br/>(no real charges)"]
+    EVT[("append-only event log")]
+    DUCK[("DuckDB analytics<br/>(persona reports, JIT stats)")]
+    NEO[("Neo4j graph<br/>(customer–product–category, recs)")]
+    AUDT["auditor agent"]
+
+    BR --> ID & CAT & ORD & CAMP & WH & CHAT
+    BR --> PAY --> SM
+    ID & CAT & ORD & CAMP & WH --> PG
+    PAY --> PG
+    CHAT -.->|"plan ops"| BR
+    PG --> EVT
+    EVT --> DUCK & NEO
+    AUD --> AUDT
+    DUCK & NEO -.->|"read-only views"| AUDT
+```
 
 | Module | DB | Notes |
 |---|---|---|

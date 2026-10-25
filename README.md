@@ -14,16 +14,24 @@ contracts after a validation gauntlet (T2).
 
 ## Architecture at a glance
 
+```mermaid
+flowchart LR
+    C["clients<br/>chat · CLI · MCP · personas"] --> GW["gateway<br/>authn · trust · request envelope"]
+    GW --> RT{"decision router<br/>rules → Jev battery → LLM fallback"}
+    RT -->|"exact op"| T0["T0 deterministic handlers"]
+    RT -->|"natural language"| T1["T1 interpreter<br/>plan-DSL from the spec"]
+    RT -->|"low confidence"| ESC["escalate / safe refusal"]
+    T0 & T1 --> BR["tool broker<br/>schema-checked in and out"]
+    BR --> MODS["modules<br/>catalog · identity · orders · payments (mock) · campaigns · warehouse"]
+    MODS --> DB[("Postgres · DuckDB · Neo4j")]
+    GW --> AUD[("hash-chained audit log")]
+    AUD --> GOV["auditor · invariants · judges"]
+    T2["T2 JIT compiler<br/>profile → codegen → validate → shadow → promote"] -.->|"promotes"| T0
+    T1 -.->|"feeds profiler"| T2
 ```
-clients ──► GATEWAY (authn, trust, audit chain)
-                └─ ROUTER: rules → Jev battery (System One) → LLM fallback → safe default
-                     ├─ T0 deterministic handlers behind versioned contracts
-                     ├─ T1 interpreter: plan-DSL bound to contract ops (LLM or rules fallback)
-                     └─ T2 JIT compiler (M1): profile → codegen → validate → shadow → promote
-DECISIONS: kernel.decide() — registered Jev question batteries anywhere in the codebase
-           (thresholds, fallbacks, pii/payment egress masking, per-call audit)
-AUDIT:     append-only hash-chained log in Postgres; auditor verifies + personas cross-check
-```
+
+Per-subsystem diagrams (lifecycle sequence, decision service, JIT ladder, persistence map)
+live in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Repository layout
 
@@ -61,7 +69,17 @@ tests/       29 hermetic tests
 - Hash-chained audit from day one is cheap and changes behavior: because every hop is recorded,
   watching `kernel.tail` during a smoke run *is* the demo of the routing tiers.
 - Isolate provider SDKs (pydantic-ai, typesafe-sdk) behind thin adapters — API drift becomes a
-  degraded path plus a log line instead of an outage.
+  degraded path plus a log line instead of an outage. (Confirmed: installed pydantic-ai 2.x
+  renamed `result_type` → `output_type`; the adapter now tries both.)
+- Spec-derived structured output: the LLM's plan schema is *generated from the promoted API
+  contract* (per-op discriminated variants, args typed by each op's request schema, choice
+  batteries as enums) — invalid ops/args are unrepresentable at generation time, and the
+  broker's post-hoc validation stays the enforcement point.
+- Validate the spec, not just against the spec: the registry now rejects documents that aren't
+  valid OpenAPI/JSON Schema or that violate house rules, and `contracts/exemplars/` pins golden
+  request→response pairs as executable contract tests (they double as the T2 shadow corpus).
+  Writing the first exemplar immediately caught a YAML flow-style gotcha (unquoted commas
+  truncate strings) — hand-written specs drift too; make them executable.
 
 ## Quickstart (M0)
 

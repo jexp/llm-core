@@ -117,23 +117,42 @@ class Interpreter:
         import json
 
         from kernel.llm_decider import run_typed
+        from kernel.structured import build_plan_output
 
+        # Structured output generated FROM the promoted spec: per-op variants discriminated by
+        # `op`, args typed by each op's request schema — the model cannot plan outside the
+        # contract. Broker re-validation after execution remains the enforcement point.
+        plan_out_type = build_plan_output(self._contracts, self._broker.implemented_ops())
         ops = [
-            {"op": o["op"], "scenario": o["scenario"], "request_schema": o["request_schema"]}
+            {"op": o["op"], "scenario": o["scenario"]}
             for o in self._contracts.capability_summary()
+            if o["op"] in self._broker.implemented_ops()
         ]
         system = (
             "You are the interpreter of an LLM-native retail kernel. Turn the request into a "
-            "plan: a short sequence of ops chosen ONLY from the listed contract operations, "
-            "with args matching each op's request_schema exactly. Prefer the fewest ops. "
+            "plan: a short sequence of ops chosen ONLY from the listed contract operations "
+            "(their typed arg schemas are part of your output schema). Prefer the fewest ops. "
             "If no op can serve the request, return an empty ops list."
         )
         prompt = (
             f"REQUEST:\n{json.dumps(payload, default=str)[:4000]}\n\n"
-            f"CONTRACT OPS:\n{json.dumps(ops, default=str)[:6000]}"
+            f"CONTRACT OPS:\n{json.dumps(ops, default=str)[:4000]}"
         )
-        plan = run_typed(self._settings, system, prompt, Plan)
-        return plan
+        plan_out = run_typed(self._settings, system, prompt, plan_out_type)
+        return self._to_plan(plan_out)
+
+    def _to_plan(self, plan_out) -> Plan:
+        ops = []
+        for v in plan_out.ops:
+            args = v.args
+            if isinstance(args, dict):
+                args = {k: w for k, w in args.items() if w is not None}
+            elif args is not None:
+                args = args.model_dump(exclude_none=True)
+            else:
+                args = {}
+            ops.append(PlanOp(op=v.op, args=args, expect=f"{v.op}.response"))
+        return Plan(ops=ops, rationale=plan_out.rationale)
 
     def _build_rules(self, payload: dict) -> Plan:
         text = str(payload.get("text", ""))
