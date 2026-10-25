@@ -1,4 +1,4 @@
-.PHONY: up down env install lint test run smoke verify
+.PHONY: up down env install lint test test-watch run smoke verify
 
 up:
 	docker compose -f infra/docker-compose.yml up -d
@@ -18,6 +18,18 @@ lint:
 
 test:
 	uv run pytest -q
+
+test-watch:
+	@touch .llmc_watch_marker; \
+	echo "watching kernel/ modules/ tests/ contracts/ (Ctrl-C to stop)"; \
+	while true; do \
+	  changed=$$(find kernel modules tests contracts \( -name '*.py' -o -name '*.yaml' \) -newer .llmc_watch_marker | head -1); \
+	  if [ -n "$$changed" ]; then \
+	    touch .llmc_watch_marker; \
+	    uv run pytest -q --tb=short; \
+	  fi; \
+	  sleep 1; \
+	done
 
 run:
 	uv run uvicorn kernel.server:app --port 8000

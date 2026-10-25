@@ -7,3 +7,4 @@ data/
 .pytest_cache/
 *.duckdb
 *.duckdb.wal
+.llmc_watch_marker

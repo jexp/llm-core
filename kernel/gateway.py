@@ -138,6 +138,14 @@ def create_app(settings: Settings | None = None, audit: AuditLog | None = None) 
         report = audit.verify()
         return {"backend": audit.backend, **report}
 
+    @app.get("/ui")
+    def dashboard():
+        from fastapi.responses import HTMLResponse
+
+        from kernel.dashboard import DASHBOARD_HTML
+
+        return HTMLResponse(DASHBOARD_HTML)
+
     @app.get("/healthz")
     def healthz():
         return {"status": "ok", "audit_backend": audit.backend,
