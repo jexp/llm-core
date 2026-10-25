@@ -1,0 +1,512 @@
+The Next Frontier of LLM Applications: Open Ecosystems and
+Hardware Synergy
+XINYI HOU, Huazhong University of Science and Technology, China
+YANJIE ZHAO, Huazhong University of Science and Technology, China
+HAOYU W ANG,Huazhong University of Science and Technology, China
+Large Language Model (LLM) applications, including LLM app stores and autonomous agents, are shaping
+the future of AI ecosystems. However, platform silos, fragmented hardware integration, and the absence
+of standardized interfaces limit scalability, interoperability, and resource efficiency. While LLM app stores
+democratize AI, their closed ecosystems restrict modular AI reuse and cross-platform portability. Meanwhile,
+agent-based frameworks offer flexibility but often lack seamless integration across diverse environments.
+This paper envisions the future of LLM applications and proposes a three-layer decoupled architecture
+grounded in software engineering principles such as layered system design, service-oriented architectures,
+and hardware-software co-design. This architecture separates application logic, communication protocols, and
+hardware execution, enhancing modularity, efficiency, and cross-platform compatibility. Beyond architecture,
+we highlight key security and privacy challenges for safe, scalable AI deployment and outline research
+directions in software and security engineering. This vision aims to foster open, secure, and interoperable
+LLM ecosystems, guiding future advancements in AI applications.
+1 INTRODUCTION
+Large Language Models (LLMs) have significantly advanced artificial intelligence by enabling a
+broad spectrum of applications, ranging from content generation and conversational agents to auto-
+mated reasoning and decision support systems [12, 39]. These applications have primarily evolved
+through two paradigms:LLM apps hosted within centralized LLM app stores, such as OpenAI’s
+GPT Store[25], Quora’s Poe[28], Hugging Face’s HuggingChat[9], ByteDance’s Coze[3], and Ten-
+cent’s Yuanqi[37], which simplify AI adoption by providing users with pre-configured, customizable
+applications [42]. The second paradigm involves LLM agents developed using frameworks like
+LangChain [16], AutoGPT [11], Langroid [18], AutoGen [23], and LlamaIndex [22], which offer
+greater programmability and modularity, allowing developers to build sophisticated, multi-agent
+systems that integrate external tools and dynamic workflows [20]. Despite their advantages, both
+paradigms remain architecturally fragmented and lack standardized interoperability, leading to
+redundant development efforts and constrained scalability.
+From a software engineering (SE) perspective, current LLM application paradigms resemble
+traditional platform-centric software ecosystems, where applications are tightly coupled to
+proprietary APIs and execution environments. LLM app stores, while lowering the barrier to entry,
+impose constraints on extensibility and cross-platform interoperability , leading to vendor
+lock-in and duplicated development efforts across different ecosystems. In contrast, agent-based
+LLM frameworks provide modularity but lack standardized mechanisms for component reuse
+and integration, making it challenging to compose LLM applications that seamlessly operate
+across heterogeneous environments. This fragmentation mirrors historical challenges in SE, where
+monolithic architectures have given way to service-oriented and microservices-based designs
+to improve reusability, scalability, and maintainability. Another key limitation of existing LLM
+applications is inefficient hardware utilization. Most rely on cloud-based execution, which, despite
+offering scalable computation, introduces latency, operational costs, and dependence on centralized
+Authors’ addresses: Xinyi Hou, xinyihou@hust.edu.cn, Huazhong University of Science and Technology, Wuhan, China;
+Yanjie Zhao, yanjie_zhao@hust.edu.cn, Huazhong University of Science and Technology, Wuhan, China; Haoyu Wang,
+haoyuwang@hust.edu.cn, Huazhong University of Science and Technology, Wuhan, China.
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+arXiv:2503.04596v1  [cs.SE]  6 Mar 2025
+2 X Hou, Y Zhao, and H Wang
+AIglasses
+Smartwatches
+AIearbuds
+···
+IoTAI
+Embedded AI Systems
+Communication Modules
+Security & Privacy Infrastructure
+Data protection
+Processing Units
+Privacy control
+Transmission encryption
+AInetworking(Bluetooth/WiFi/···)
+AI task routing 
+AI SandboxingInput Devices
+AI accelerators 
+Embeddedprocessors
+Edge AI processors
+b
+b
+§3.1
+Application
+Layer
+§3.2
+Protocol
+Layer
+§3.3
+Hardware
+Layer
+Distribution Channels
+Device authentication 
+Identity permissions 
+···
+Connectionmanagement
+Session Management
+Task allocation
+Model invocation
+···
+Edge computing 
+optimization
+Task Orchestration
+Low-latency 
+Communication
+···
+Streaming data 
+transmission
+Transport Protocols
+AI device networking
+···
+Remote LLM 
+invocation
+Network Communication
+Basicsetting (Model,···)
+Knowledgebase (RAG)
+Skills (Built-in/External)
+Memory (Long-term,···)
+Workflow(Multi-agent,···)
+LLM App Configuration
+Publish
+OfficialLLMappstores
+Third-party LLM app stores
+OtherChannels
+Developers
+Managers
+ Users
+Voice
+Video
+TextImage
+InteractionCode
+Localdocuments
+Onlinedata 
+Third-party files
+···
+Custom input
+Pluginstores
+···
+Third-partyservices
+Fig. 1. A Three-Layer Decoupled Architecture for LLM Applications.
+infrastructure. The absence of standardized LLM-hardware co-design prevents full utilization of edge
+devices, and embedded AI systems, limiting real-time, energy-efficient execution. In traditional SE,
+hardware-aware optimization has been crucial for improving system performance, from compiler
+optimizations to distributed computing frameworks. A similar paradigm shift is needed for LLM
+applications to fully exploit hardware capabilities in a scalable and efficient manner.
+To address these challenges, we propose a new paradigm for LLM applications based on open
+software ecosystems and hardware-aware system design. We introduce a three-layer decoupled
+architecture as shown in Figure 1, inspired by layered system design, service-oriented archi-
+tectures, and hardware-software co-design. The Application Layer handles app configurations,
+multi-agent orchestration, and cross-platform interoperability. The Protocol Layer ensures ef-
+ficient task execution, secure communication, and standardized data exchange. The Hardware
+Layer optimizes computation using AI accelerators, privacy-preserving infrastructures, and edge
+computing. Beyond architecture, we also explore security and privacy challenges, interoperability
+issues, and future directions for scalable, decentralized LLM applications. This paper makes the
+following key contributions:
+• A Software-Defined Approach to LLM Applications: We propose a structured design
+methodology based on SE principles, ensuring modularity, reusability, and maintainability
+while decoupling applications from specific models.
+• Towards a Three-Layer Decoupled Architecture: We envision a future architecture
+that separates application logic, protocol management, and hardware execution, enabling
+interoperability, scalability, and adaptive optimization across platforms.
+• Future Directions in Security Engineering for LLM Applications: We highlight key
+challenges and research opportunities in decentralized execution, composable AI services,
+and software-hardware co-design, shaping the next generation of LLM applications.
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+The Next Frontier of LLM Applications: Open Ecosystems and Hardware Synergy 3
+2 FUTURE VISION FOR LLM APPLICATIONS
+This section explores emerging trends in LLM applications, highlighting their potential to create a
+more interconnected and intelligent AI landscape.
+2.1 Open Ecosystems
+LLM app stores, such as GPT Store[25], FowGPT [38], and Yuanqi[37], have emerged as platforms
+for distributing and customizing AI-driven applications. They offer features like instructions,
+knowledge bases, and plugin integration, making AI adoption more accessible. However, these
+platforms are mostly centralized and proprietary, limiting cross-platform interoperability and
+collaboration. Beyond app stores, LLM agents provide a more autonomous approach, enabling task
+automation and multi-agent collaboration. Frameworks like LangChain [16], AutoGPT [11], and
+LlamaIndex [22] allow agents to plan, reason, and execute tasks independently. However, current
+implementations remain fragmented, lacking standardized communication protocols for secure and
+scalable cooperation. Recent efforts such asModel Context Protocol (MCP) [1], Agent Network Protocol
+(ANP) [6], and Internet of Agents (IoA) [7] have emerged. MCP, proposed by Anthropic, aims to
+integrate LLMs with external tools and resources by treating the entire internet as a model’s context,
+enabling more seamless and dynamic interactions. ANP focuses on building a decentralized, secure,
+and scalable communication framework for AI agents, incorporating identity management and
+encrypted communication to ensure trust and security in multi-agent collaboration. IoA, inspired
+by the traditional internet architecture, envisions a global network where agents can autonomously
+register, discover, and communicate, fostering an open environment for large-scale AI cooperation.
+While these protocols represent important steps toward an open ecosystem , they remain
+in the early stages of development, and a comprehensive, structured approach is still needed to
+achieve widespread adoption.
+The limitations of LLM applications underscore the need for a more structured and interoperable
+architecture. Existing platforms offer glimpses of what is possible but remain constrained by
+fragmentation and lack of standardization. To realize the full potential of LLM applications, there
+is a pressing need for an open ecosystem that enables seamless interaction across diverse
+LLM applications, platforms, and services . Addressing these challenges requires a shift toward
+a more modular, decoupled design that ensures flexibility, security, and extensibility.
+2.2 Hardware Synergy
+While LLM applications have traditionally been software-driven, AI hardware is now transforming
+how users engage with intelligent systems. Devices like AI phones, smart earbuds, and aug-
+mented reality glasses are moving AI interactions from cloud-dependent models to real-time,
+edge-computing environments. Innovative products such as Ola Friend [4] provide emotional com-
+panionship through natural voice interactions, while AI Pin [13] allows users to create personalized
+AI assistants with full data control. Friend [33] offers a wearable AI chat companion with built-in
+privacy protection, and Plaud Note [26] and Plaud NotePin [27] enhance productivity by transcribing
+and summarizing conversations using advanced LLMs. These developments illustrate the growing
+synergy between LLMs and dedicated hardware , making intelligent systems more accessible
+and seamlessly integrated into daily life.
+Despite these advancements, many AI wearables and devices remain constrained within propri-
+etary ecosystems, limiting their ability to connect with third-party LLM applications or agent-based
+systems. Cloud-based processing, while powerful, also presents challenges related to latency and pri-
+vacy. For AI to fully integrate into everyday experiences, hardware and software must be designed
+with interoperability in mind. A more flexible architecture that connects LLM applications,
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+4 X Hou, Y Zhao, and H Wang
+and AI hardware will be essential to unlocking the full potential of these technologies. This need
+for a structured, scalable, and hardware-inclusive AI ecosystem is a key motivation behind the
+three-layer decoupled architecture proposed in our vision.
+3 THREE-LAYER DECOUPLED ARCHITECTURE
+The three-layer decoupled architecture is shown in the Figure 1. The Application Layer focuses
+on LLM configuration, multimodal interactions, and distribution channels. The Protocol Layer
+manages session authentication, task orchestration, and communication protocols. The Hardware
+Layer enables LLM applications to be deployed on various computing devices. This decoupled
+design ensures flexibility, scalability, and cross-platform adaptability for LLM applications.
+3.1 Application Layer
+The Application Layer serves as the interface between end users, developers, and LLM ap-
+plications, enabling the design, configuration, interaction, and distribution of AI services .
+This layer abstracts the complexities of the underlying Protocol Layer and Hardware Layer, allowing
+seamless deployment across different platforms while ensuring flexibility and adaptability.
+At the core of this layer is LLM app configuration , where developers and managers can
+define the behavior and capabilities of their applications. This includes setting up persona and
+prompt resources, selecting a base model, configuring input/output formats, and adjusting generation
+diversity. Additionally, applications can integrate knowledge bases, allowing them to retrieve
+and recall information from structured and unstructured data sources such as local documents,
+online content, and third-party APIs. To enhance functionality, LLM applications can incorporate
+built-in skills (e.g., web search, image generation, code interpretation) or extend their capabilities
+through external plugins and APIs . These features enable applications to perform specialized
+tasks, interact with external services, and execute dynamic workflows. The workflow system
+further allows developers to define multi-step processes, facilitating complex decision-making and
+task automation. Once configured, applications can be published and distributed through official
+LLM app stores, third-party marketplaces, or enterprise channels , making them accessible to users
+across various platforms. The multi-modal interaction support ensures users can engage with
+applications through text, voice, image, video, and code-based inputs, broadening their usability
+across different domains. When LLM applications are deployed on hardware devices, even more
+input modalities become available, such as sensor data, gestures, eye tracking, and biometric signals.
+Existing LLM applications often suffer from limited scalability, inefficient execution, and
+poor cross-platform adaptability due to their monolithic design, where authentication, task
+management, and communication are tightly integrated within the application itself. In our proposed
+Three-Layer Decoupled Architecture, the Application Layer offloads these functions to the
+Protocol Layer, enabling more efficient session management, dynamic task orchestration,
+and optimized real-time communication . This separation allows LLM applications to be more
+flexible, scalable, and interoperable across different platforms and computing environments.
+3.2 Protocol Layer
+The Protocol Layer plays a dual role: breaking down barriers between different platforms
+while also providing a secure bridge to hardware components . By establishing a structured
+communication framework, the Protocol Layer enables LLM applications to interact fluidly across
+platforms and hardware environments, unlocking their full potential in real-world applications.
+3.2.1 Session Management. Traditional OAuth-based identity systems [2] are often centralized and
+not optimized for AI-native workflows, leading to platform lock-in. To address this, the Protocol
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+The Next Frontier of LLM Applications: Open Ecosystems and Hardware Synergy 5
+Layer adopts Decentralized Identifiers (DID) [29], enabling secure authentication without reliance
+on a central authority. Device authentication ensures that only verified LLM applications and
+hardware components can communicate. The Protocol Layer supports mutual authentication via
+TLS with client certificates[15] and Secure Remote Password (SRP)[36, 41], which is crucial for
+distributed AI networks operating in untrusted environments. Identity permissions enforce
+fine-grained access control using zero-trust security principles [34], dynamically evaluating each
+request based on identity, task priority, and historical trust scores to ensure secure and context-
+aware authorization. Connection management guarantees reliable and efficient communication
+between LLM applications and hardware. The Protocol Layer incorporates session resumption
+techniques (e.g., TLS session tickets [ 35], QUIC [ 17]) to maintain secure connections without
+repeated handshakes. Additionally, it supports multiplexed connections, optimizing bandwidth
+usage and enabling multiple AI workflows to run concurrently over a single secure channel.
+3.2.2 Task Orchestration. Task allocation efficiently distributes computational workloads across
+available resources. Inspired by distributed computing frameworks like Kubernetes [5] and Ray [24],
+the Protocol Layer employs intelligent scheduling based on latency, computational cost, and real-
+time system load, ensuring balanced workloads across cloud, edge, and specialized accelerators.
+Model invocation enables seamless interaction with external models and services. Using standard-
+ized model-serving protocols, LLM applications can dynamically switch between local execution
+and remote model calls, optimizing efficiency while selecting the most suitable model for each task.
+Edge computing optimization reduces latency and cloud dependence by processing tasks closer
+to the data source. The Protocol Layer supports adaptive inference, enabling models to run on edge
+devices when network conditions or privacy constraints limit cloud execution. Techniques such as
+model quantization, pruning, and federated learning further improve performance and resource
+efficiency, ensuring smooth operation even in bandwidth-limited or offline scenarios.
+3.2.3 Transport Protocols. Low-latency communication is crucial for maintaining responsive-
+ness in AI-driven applications, such as conversational AI, autonomous systems, and real-time
+analytics. The Protocol Layer leverages transport protocols like QUIC [ 17], which reduces con-
+nection setup time through 0-RTT handshakes, and gRPC [ 40], which enables efficient binary
+serialization using Protocol Buffers. These optimizations minimize latency and improve throughput,
+ensuring that AI-generated responses are delivered instantly, even in high-concurrency environ-
+ments. Streaming data transmission allows LLM applications to handle continuous data flows,
+enabling real-time interaction with external models and hardware devices. Unlike traditional request-
+response models, streaming protocols such as WebSockets [10], HTTP/2 Server Push [30, 43], and
+MQTT [21] support persistent connections, reducing overhead from repeated handshakes. This is
+beneficial for applications like live inference, sensor data aggregation, and AI-powered augmented
+reality systems, where uninterrupted, low-latency data exchange is required.
+3.2.4 Network Communication. AI device networking enables seamless communication between
+LLM applications across cloud servers, edge devices, and embedded AI systems. By using stan-
+dardized protocols, LLM applications efficiently exchange data in heterogeneous environments,
+enabling real-time collaboration between AI-powered devices such as smart assistants, autonomous
+robots, and IoT-driven industrial systems for synchronized, context-aware interactions. Remote
+LLM invocation allows applications to access external models and computational resources based
+on workload demands. Using Federated Model Invocation (FMI) and secure API gateways, LLM ap-
+plications can invoke high-capacity remote models when local resources are insufficient. Adaptive
+model routing and load-aware inference delegation direct requests to the most suitable LLM
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+6 X Hou, Y Zhao, and H Wang
+instance, optimizing performance and minimizing latency. For instance, a mobile LLM can offload
+complex tasks to a cloud-based model, ensuring responsiveness while conserving local resources.
+3.3 Hardware Layer
+This layer underpins AI execution with specialized processors, communication modules, and
+security frameworks. Integrated with the Protocol Layer, it supports dynamic workload allocation,
+secure communication, and optimized inference across cloud, edge, and embedded systems.
+3.3.1 Input Devices. Input devices like microphones, cameras, and biometric sensors provide es-
+sential data for LLM applications, enabling real-time speech recognition, image processing, and
+multi-modal interactions. To ensure privacy, the Hardware Layer incorporates on-device encryp-
+tion, secure data pipelines, and privacy-preserving inference techniques that minimize raw
+data exposure. By processing sensitive data locally whenever possible, devices can reduce reliance
+on cloud-based processing, enhancing user privacy and responsiveness.
+3.3.2 Processing Units. AI accelerators, embedded processors, and edge AI chips form the computa-
+tional backbone of LLM applications. AI accelerators such as NPUs, TPUs, and GPUs are optimized
+for high-throughput model execution, delivering efficient inference for complex AI tasks. Embedded
+processors power low-energy AI applications in wearables and IoT devices, while edge AI chips
+enable local execution of LLMs, reducing latency and dependency on external networks. To enhance
+security, AI sandboxing techniques isolate execution environments, preventing unauthorized data
+access and ensuring controlled AI interactions. Additionally, hardware-backed trusted execution
+environments (TEEs) [19, 31] like Intel SGX and ARM TrustZone provide secure enclaves for
+sensitive computations, ensuring model integrity and confidential processing.
+3.3.3 Communication Modules. AI-native networking protocols, including Bluetooth, WiFi,
+UWB, and 5G, enable low-latency synchronization, ensuring smooth communication across diverse
+hardware environments [32]. To optimize workload distribution, AI task routing mechanisms
+dynamically allocate computational tasks between cloud, edge, and local infrastructures, enhancing
+efficiency and responsiveness. Security is reinforced through end-to-end encryption mechanisms
+like TLS 1.3 [8] and QUIC-based transport security [14], while zero-trust authentication frameworks
+prevent unauthorized access to AI-driven services. Additionally, Differential privacy safeguards
+transmitted data, balancing security with AI interaction accuracy.
+3.3.4 Embedded AI Systems. The integration of AI into embedded systems such as AI glasses,
+smartwatches, AI earbuds, and IoT-driven automation platforms is redefining the role of LLM
+applications in real-world environments. These systems leverage hybrid AI execution strategies,
+seamlessly switching between local processing and cloud-based inference based on latency re-
+quirements, energy efficiency, and computational demands. The Protocol Layer facilitates this
+adaptability by enabling intelligent model selection, allowing devices to determine whether to
+execute tasks locally or offload them to remote LLM services. This dynamic allocation ensures
+optimal performance while maintaining a balance between privacy, efficiency, and responsiveness.
+3.3.5 Security and privacy infrastructure. Ensuring the security and privacy of AI-powered devices
+is fundamental to the Hardware Layer, enabling trustworthy and resilient AI interactions. Privacy
+control mechanisms such as encrypted model storage, federated learning for decentralized AI train-
+ing, and policy-driven access control safeguard user data while allowing AI models to improve over
+time without exposing sensitive information. To mitigate security risks, AI-driven threat detection
+systems employ real-time anomaly detection to identify adversarial attacks or unauthorized access,
+ensuring the integrity of AI interactions. Furthermore, secure firmware updates and model integrity
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+The Next Frontier of LLM Applications: Open Ecosystems and Hardware Synergy 7
+verification mechanisms prevent unauthorized modifications, ensuring that AI models deployed
+on hardware devices remain tamper-proof and up-to-date, reinforcing the reliability of AI-driven
+applications across diverse environments.
+4 CHALLENGES & OPPORTUNITIES
+4.1 Challenges
+4.1.1 Challenges in Secure Plugin Execution for LLM Applications. The Application Layer extends
+LLM functionality via external plugins, but securely isolating them remains challenging. Traditional
+sandboxing introduces performance overhead, while dynamic execution increases risks of side-
+channel attacks and dependency vulnerabilities. Unlike static components, LLM plugins are
+installed and updated dynamically, complicating authentication and integrity verification .
+Ensuring only trusted plugins are loaded requires strong cryptographic checks, but excessive
+security can hinder usability. Additionally, plugins interacting with external APIs posedata leakage
+risks, making strict access control difficult without sacrificing functionality.
+4.1.2 Challenges in Privacy-Preserving Task Orchestration. The Protocol Layer enables LLMs to
+offload tasks across cloud, edge, and embedded systems, but transmitting intermediate computations
+increases risks of data leakage, model inversion attacks, and unauthorized access . While
+homomorphic encryption and secure multi-party computation (SMPC) offer privacy, they
+are often too slow for real-time applications. LLMs must also comply with data privacy regu-
+lations like GDPR and CCPA, which mandate transparency and user control over personal data.
+Ensuring on-demand data deletion is particularly challenging, as current model unlearning
+techniques struggle to efficiently remove specific user data without full retraining, leading to
+high computational overhead. Additionally, balancing privacy with model performance remains a
+key challenge—overly aggressive anonymization or differential privacy techniques can degrade AI
+accuracy, reducing the effectiveness of personalized interactions and adaptive learning capabilities.
+4.1.3 Challenges in Testing and Debugging the Architectures. The three-layer decoupled archi-
+tecture enhances scalability but complicates end-to-end testing and debugging . LLMs are
+non-deterministic, making error reproduction difficult, while security threats like prompt injec-
+tion, adversarial perturbations, and model inversion attacks span multiple layers. Traditional
+security testing methods, such asfuzz testing and static analysis, are poorly suited for evaluating
+AI-specific threats, as they fail to capture the dynamic and probabilistic nature of LLM responses.
+Moreover, automated testing frameworks struggle to assess LLM robustness, bias, and fairness ,
+further complicating the validation of LLM applications.
+4.1.4 Challenges in Secure AI Hardware Deployment. The Hardware Layer enables LLM execution
+on AI accelerators and edge devices, but preventingmodel extraction, modification, and misuse
+is a major challenge.Model extraction attacks threaten deployed models, and existing protections
+like model watermarking and encrypted storage are not foolproof. AI-powered devices, such as
+smart glasses and wearable, require low-latency inference, yet securing them against tampering,
+adversarial attacks, and unauthorized access often adds computational overhead. Additionally,
+ensuring secure firmware updates, TEE, and supply chain integrity is increasingly difficult,
+as attackers may exploit hardware backdoors or inject malicious firmware. Balancing security with
+efficiency remains a persistent challenge.
+4.2 Opportunities
+4.2.1 Secure and Trustworthy LLM Plugin Frameworks. Future research can focus on designing
+granular and adaptive security models for LLM plugins, ensuring fine-grained access control
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+8 X Hou, Y Zhao, and H Wang
+without restricting functionality. This includes exploringcontext-aware permission frameworks
+that dynamically adjust plugin privileges based on factors such as user intent, execution context,
+and risk assessment. Furthermore, advancements in TEEs and hardware-based attestation offer
+opportunities to develop secure LLM plugin ecosystems. Investigating how TEEs can be integrated
+with AI-driven systems may enable verifiable execution of untrusted plugins while maintaining
+data confidentiality. Additionally, studying lightweight and efficient sandboxing techniques ,
+specifically optimized for machine learning workloads, can help isolate plugins without imposing
+significant performance overhead.
+4.2.2 Privacy-Preserving Task Execution. With increasing concerns about data privacy, research can
+explore federated inference strategies that allow LLMs to process tasks locally while aggregating
+encrypted updates across distributed environments. Unlike traditional cloud-based inference, this
+approach minimizes raw data exposure while maintaining model performance. Another promising
+direction is developing adaptive privacy mechanisms that balance security with computational
+efficiency. This includes exploring differentially private inference techniques that dynamically
+adjust privacy levels based on task sensitivity and user preferences. Additionally, research into
+efficient model unlearning algorithms can address the challenge of removing specific user
+interactions from LLMs without requiring costly full retraining. Techniques such as incremental
+model updates, selective forgetting, and reversible AI workflows may provide a more scalable
+approach to compliance with data privacy regulations.
+4.2.3 Automated Testing and Security Validation for LLM Architectures. Ensuring LLM reliability
+requires advanced automated testing methodologies . Research can focus on self-learning
+testing frameworks using reinforcement learning to generate diverse test cases. Adversarial
+security validation is another key area, where automated tools probe LLMs for vulnerabilities via
+synthetic adversarial prompts, testing resilience against prompt injection, model inversion, and
+data leakage. Additionally, real-time anomaly detection can help identify unexpected behaviors
+and mitigate risks. Integrating formal verification techniques into LLM security assessments can
+further enhance trust, providing mathematical guarantees of correctness for critical applications in
+healthcare, finance, and autonomous systems.
+4.2.4 Secure AI Hardware for Next-Generation LLM Applications. Research onhardware-accelerated
+encryption can enable privacy-preserving inference with minimal overhead. Developingconfiden-
+tial AI computing frameworks using TEEs and secure enclaves can enhance model protection
+while ensuring efficient large-scale deployment. Exploring secure AI chip architectures with
+built-in defenses against adversarial attacks, model extraction, and tampering can further strengthen
+security. These defenses include memory protection, secure boot, and tamper-resistant accelerators.
+Ensuring supply chain integrity is another key challenge. Investigating hardware provenance
+verification and blockchain-based trust mechanisms can help prevent compromised AI models
+and safeguard LLM execution environments.
+5 CONCLUSION
+The future of LLM applications depends on overcoming platform silos, fragmented hardware inte-
+gration, and interoperability challenges. This paper envisions a three-layer decoupled architecture
+to enhance modularity, efficiency, and cross-platform compatibility. Addressing key security and
+privacy challenges is crucial for safe and scalable AI deployment. We also highlight open research
+directions in software architecture and security engineering to support the next generation of
+AI systems. An open, secure, and adaptable AI infrastructure will be essential for driving future
+advancements in LLM application ecosystems.
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+The Next Frontier of LLM Applications: Open Ecosystems and Hardware Synergy 9
+REFERENCES
+[1] Anthropic. 2024. Model Context Protocol (MCP). https://modelcontextprotocol.io/.
+[2] Ryan Boyd. 2012. Getting started with OAuth 2.0 . " O’Reilly Media, Inc. ".
+[3] ByteDance. 2024. Coze. https://www.coze.com/.
+[4] ByteDance. 2024. Ola Friend. https://www.olafriend.com/product.
+[5] Carmen Carrión. 2022. Kubernetes scheduling: Taxonomy, ongoing issues and challenges. Comput. Surveys 55, 7
+(2022), 1–37.
+[6] Gaowei Chang. 2024. AgentNetworkProtocol. https://agent-network-protocol.com/specs/white-paper.html.
+[7] Weize Chen, Ziming You, Ran Li, Yitong Guan, Chen Qian, Chenyang Zhao, Cheng Yang, Ruobing Xie, Zhiyuan Liu,
+and Maosong Sun. 2024. Internet of agents: Weaving a web of heterogeneous agents for collaborative intelligence.
+arXiv preprint arXiv:2407.07061 (2024).
+[8] Benjamin Dowling, Marc Fischlin, Felix Günther, and Douglas Stebila. 2015. A cryptographic analysis of the TLS 1.3
+handshake protocol candidates. In Proceedings of the 22nd ACM SIGSAC conference on computer and communications
+security. 1197–1210.
+[9] Hugging Face. 2024. HuggingChat. https://huggingface.co/chat/assistants.
+[10] Ian Fette and Alexey Melnikov. 2011. The websocket protocol. Technical Report.
+[11] Significant Gravitas. 2023. AutoGPT. https://github.com/Significant-Gravitas/AutoGPT.
+[12] Xinyi Hou, Yanjie Zhao, Yue Liu, Zhou Yang, Kailong Wang, Li Li, Xiapu Luo, David Lo, John C. Grundy, and Haoyu
+Wang. 2023. Large Language Models for Software Engineering: A Systematic Literature Review. CoRR abs/2308.10620
+(2023). https://doi.org/10.48550/ARXIV.2308.10620 arXiv:2308.10620
+[13] Humane. 2024. AI Pin. https://humane.com/.
+[14] Arash Molavi Kakhki, Samuel Jero, David Choffnes, Cristina Nita-Rotaru, and Alan Mislove. 2017. Taking a long look
+at QUIC: an approach for rigorous evaluation of rapidly evolving transport protocols. Inproceedings of the 2017 internet
+measurement conference. 290–303.
+[15] Hugo Krawczyk, Kenneth G Paterson, and Hoeteck Wee. 2013. On the security of the TLS protocol: A systematic
+analysis. In Annual Cryptology Conference. Springer, 429–448.
+[16] LangChain. 2022. LangChain: Framework for developing applications powered by language models. https://github.
+com/langchain-ai/langchain.
+[17] Adam Langley, Alistair Riddoch, Alyssa Wilk, Antonio Vicente, Charles Krasic, Dan Zhang, Fan Yang, Fedor Kouranov,
+Ian Swett, Janardhan Iyengar, et al . 2017. The quic transport protocol: Design and internet-scale deployment. In
+Proceedings of the conference of the ACM special interest group on data communication . 183–196.
+[18] Langroid. 2023. Langroid: Harness LLMs with Agents, Multi-Agent Collaboration, Custom Tools, VectorDB. https:
+//github.com/langroid/langroid.
+[19] Dayeol Lee, David Kohlbrenner, Shweta Shinde, Krste Asanović, and Dawn Song. 2020. Keystone: An open framework
+for architecting trusted execution environments. In Proceedings of the Fifteenth European Conference on Computer
+Systems. 1–16.
+[20] Yuanchun Li, Hao Wen, Weijun Wang, Xiangyu Li, Yizhen Yuan, Guohong Liu, Jiacheng Liu, Wenxing Xu, Xiang
+Wang, Yi Sun, et al. 2024. Personal llm agents: Insights and survey about the capability, efficiency and security. arXiv
+preprint arXiv:2401.05459 (2024).
+[21] Roger A Light. 2017. Mosquitto: server and client implementation of the MQTT protocol. Journal of Open Source
+Software 2, 13 (2017), 265.
+[22] Jerry Liu. 2022. LlamaIndex: A data framework for LLM applications. https://github.com/run-llama/llama_index.
+[23] Microsoft. 2023. AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation Framework. https:
+//github.com/microsoft/autogen.
+[24] Philipp Moritz, Robert Nishihara, Stephanie Wang, Alexey Tumanov, Richard Liaw, Eric Liang, Melih Elibol, Zongheng
+Yang, William Paul, Michael I Jordan, et al. 2018. Ray: A distributed framework for emerging{AI} applications. In
+13th USENIX symposium on operating systems design and implementation (OSDI 18) . 561–577.
+[25] OpenAI. 2024. GPT Store. https://chat.openai.com/gpts.
+[26] Plaud.ai. 2024. Plaud Note. https://www.plaud.ai/products/plaud-note-ai-voice-recorder.
+[27] Plaud.ai. 2024. Plaud NotePin. https://www.plaud.ai/products/notepin.
+[28] Quora. 2024. Poe Explore. https://poe.com/explore.
+[29] Drummond Reed, Manu Sporny, Dave Longley, Christopher Allen, Ryan Grant, Markus Sabadello, and Jonathan Holt.
+2020. Decentralized identifiers (dids) v1. 0. Draft Community Group Report (2020).
+[30] Sanae Rosen, Bo Han, Shuai Hao, Z Morley Mao, and Feng Qian. 2017. Push or request: An investigation of HTTP/2
+server push for improving mobile performance. In Proceedings of the 26th International Conference on World Wide Web .
+459–468.
+, Vol. 1, No. 1, Article . Publication date: March 2025.
+10 X Hou, Y Zhao, and H Wang
+[31] Mohamed Sabt, Mohammed Achemlal, and Abdelmadjid Bouabdallah. 2015. Trusted execution environment: What it
+is, and what it is not. In 2015 IEEE Trustcom/BigDataSE/Ispa, Vol. 1. IEEE, 57–64.
+[32] Tara Salman and Raj Jain. 2017. Networking protocols and standards for internet of things. Internet of things and data
+analytics handbook (2017), 215–238.
+[33] Avi Schiffmann. 2024. Friend. https://friend.com/.
+[34] V Stafford. 2020. Zero trust architecture. NIST special publication 800, 207 (2020), 800–207.
+[35] Erik Sy, Christian Burkert, Hannes Federrath, and Mathias Fischer. 2018. Tracking users across the web via TLS session
+resumption. In Proceedings of the 34th Annual Computer Security Applications Conference . 289–299.
+[36] David Taylor, Thomas Wu, Nikos Mavrogiannopoulos, and Trevor Perrin. 2007. Using the Secure Remote Password
+(SRP) protocol for TLS authentication . Technical Report.
+[37] Tencent. 2024. Yuanqi. https://yuanqi.tencent.com/agent-shop.
+[38] Lifan Wang and Jay Dang. 2024. FlowGPT. https://flowgpt.com/.
+[39] Shenao Wang, Yanjie Zhao, Xinyi Hou, and Haoyu Wang. 2024. Large Language Model Supply Chain: A Research
+Agenda. ACM Trans. Softw. Eng. Methodol. (Dec. 2024). https://doi.org/10.1145/3708531 Just Accepted.
+[40] Xingwei Wang, Hong Zhao, and Jiakeng Zhu. 1993. GRPC: A communication cooperation mechanism in distributed
+systems. ACM SIGOPS Operating Systems Review 27, 3 (1993), 75–86.
+[41] Thomas D Wu et al. 1998. The Secure Remote Password Protocol.. In NDSS, Vol. 98. Citeseer, 97–111.
+[42] Yanjie Zhao, Xinyi Hou, Shenao Wang, and Haoyu Wang. 2024. LLM App Store Analysis: A Vision and Roadmap.
+ACM Trans. Softw. Eng. Methodol. (Dec. 2024). https://doi.org/10.1145/3708530 Just Accepted.
+[43] Torsten Zimmermann, Jan Rüth, Benedikt Wolters, and Oliver Hohlfeld. 2017. How HTTP/2 pushes the web: An
+empirical study of HTTP/2 server push. In 2017 IFIP Networking Conference (IFIP Networking) and Workshops . IEEE,
+1–9.
+, Vol. 1, No. 1, Article . Publication date: March 2025.

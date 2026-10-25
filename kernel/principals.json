@@ -1,0 +1,5 @@
+{
+  "persona-smoke": { "key": "dev-smoke-key", "roles": ["customer"], "trust": 0.9 },
+  "operator": { "key": "dev-operator-key", "roles": ["staff"], "trust": 1.0 },
+  "auditor": { "key": "dev-auditor-key", "roles": ["auditor"], "trust": 1.0 }
+}

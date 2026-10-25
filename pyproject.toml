@@ -1,0 +1,28 @@
+[project]
+name = "llm-core"
+version = "0.1.0"
+description = "LLM-native retail kernel: decision-model routing, plan-DSL interpreter, JIT-compiled API handlers"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-ai>=2.0",
+    "typesafe-sdk>=0.1",
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "jsonschema>=4.23",
+    "pyyaml>=6.0",
+    "duckdb>=1.1",
+    "neo4j>=5.25",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

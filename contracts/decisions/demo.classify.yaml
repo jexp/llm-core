@@ -1,0 +1,36 @@
+id: demo.classify
+version: "1"
+description: >-
+  Demo dynamic decision: classify a free-text message (tone + urgency) without hardcoding
+  heuristics. Exercised via POST /v1/decide and in tests.
+backend: jev
+fallback: rules
+data_labels:
+  message: pii # demonstrates egress masking: masked before any remote backend
+cache_ttl_seconds: 30
+thresholds:
+  choice_auto: 0.5
+  choice_confirm: 0.35
+  noul_yes: 0.7
+  noul_no: 0.3
+questions:
+  tone:
+    type: choice
+    instructions: What is the tone of the message?
+    criteria:
+      calm: A neutral or polite message.
+      frustrated: An annoyed but civil message.
+      angry: An upset or hostile message.
+  urgent:
+    type: noul
+    instructions: Does this message require urgent attention?
+    criteria:
+      yes: Time-sensitive or escalating problem.
+      no: Routine question or feedback.
+defaults:
+  tone:
+    type: choice
+    value: calm
+  urgent:
+    type: noul
+    value: 0.2

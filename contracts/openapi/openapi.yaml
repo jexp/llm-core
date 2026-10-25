@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Aurora Outfitters — promoted API (llm-core)
+  version: 0.1.0
+  description: >
+    Spec-first contract, promoted before implementations exist. Transport: POST /v1/request
+    with {"payload": {"op": "<operationId>", "args": {...}}} for structured calls, or
+    {"payload": {"text": "..."}} for natural-language requests served by the interpreter
+    tier. Implementations are filled in by the kernel: interpreter (T1) first, JIT-compiled
+    handlers (T2) as traffic justifies them.
+paths:
+  /ops/health:
+    get:
+      operationId: health
+      x-scenario: Liveness/readiness check of the kernel and its modules.
+      responses:
+        "200":
+          description: Kernel health.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /ops/catalog.list:
+    post:
+      operationId: catalog.list
+      x-scenario: >-
+        List products with optional category and price filters; powers browsing and
+        natural-language product search ("what do you have under $20 for camping?").
+      x-mutating: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CatalogListRequest"
+      responses:
+        "200":
+          description: Matching products.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogListResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version]
+      additionalProperties: false
+      properties:
+        status: { type: string }
+        service: { type: string }
+        version: { type: string }
+    CatalogListRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          type: string
+          enum: [camping, hiking, climbing, apparel]
+        max_price: { type: number, exclusiveMinimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    CatalogItem:
+      type: object
+      required: [id, name, category, price, stock, description]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        price: { type: number, exclusiveMinimum: 0 }
+        stock: { type: integer, minimum: 0 }
+        description: { type: string }
+    CatalogListResponse:
+      type: object
+      required: [items, count]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CatalogItem" }
+        count: { type: integer, minimum: 0 }

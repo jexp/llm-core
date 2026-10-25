@@ -1,0 +1,57 @@
+id: router.route
+version: "1"
+description: >-
+  Gateway routing battery. Trusted inputs only: request payload, capability hint, and the
+  system-owned candidate-op list. Decides tier, risk, and ambiguity for each request.
+backend: jev
+fallback: llm
+data_labels:
+  request: public
+  capability_hint: public
+  candidate_ops: public
+cache_ttl_seconds: 0
+thresholds:
+  choice_auto: 0.5
+  choice_confirm: 0.35
+  noul_yes: 0.7
+  noul_no: 0.3
+questions:
+  route_tier:
+    type: choice
+    instructions: >-
+      Which kernel tier should handle this request? t0_deterministic fits precise structured
+      calls naming an op; t1_interpreter fits natural language or multi-step requests;
+      escalate fits unsafe, out-of-scope, or payment-affecting requests this system cannot
+      decide; other fits anything else.
+    criteria:
+      t0_deterministic: A structured call whose op is one of the candidate ops.
+      t1_interpreter: Natural language or composed requests served by planning over ops.
+      escalate: Unsafe, out-of-scope, or payment-affecting; needs a human.
+      other: None of the above.
+  risky:
+    type: noul
+    instructions: >-
+      Does this request attempt a state-changing or payment-affecting action (order, payment,
+      account change), as opposed to a read-only lookup or browse?
+    criteria:
+      yes: The request wants to create, modify, or pay for something.
+      no: The request only reads, searches, or asks.
+  ambiguity:
+    type: score
+    instructions: How unambiguous is the request?
+    criteria:
+      - Completely clear and specific.
+      - Clear with minor gaps.
+      - Somewhat vague, intent inferable.
+      - Vague; intent must be guessed.
+      - Incoherent or contradictory.
+defaults:
+  route_tier:
+    type: choice
+    value: t1_interpreter
+  risky:
+    type: noul
+    value: 0.1
+  ambiguity:
+    type: score
+    value: 2

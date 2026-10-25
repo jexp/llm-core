@@ -1,0 +1,14 @@
+# M0 persona: smoke test client (API).
+name: smoke
+client_type: api
+description: Contract conformance + router tiers + audit chain verification.
+steps:
+  - fetch_spec: GET /specs/openapi.json + /specs/mcp-manifest.json; assert catalog ops promoted.
+  - t0_call: POST /v1/request {op: catalog.list, args: {max_price: 20}}; assert tier t0 + schema conformance.
+  - t1_natural_language: POST /v1/request {text: "what do you have under $20 for camping?"}; assert tier t1, plan recorded, results schema-valid.
+  - audit_check: GET /v1/audit?request_id=...; assert RECEIVED/DECIDED/PLAN/OP_RESULT/COMPLETED; chain verify ok.
+expected_invariants:
+  - spec_promoted_before_implementation
+  - t0_output_matches_contract
+  - t1_plan_recorded_in_audit
+  - audit_chain_intact
